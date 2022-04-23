@@ -16,6 +16,7 @@ public class SchedulerRepositoryContainer extends ElasticsearchContainer {
     public static final String ELASTICSEARCH_HOST = "localhost";
     public static final String ELASTICSEARCH_USERNAME = "elastic";
     public static final String ELASTICSEARCH_PASSWORD = "password";
+    public static final long MINUTES_BEFORE_NOW = 5;
 
     private static SchedulerRepositoryContainer schedulerRepositoryContainer;
 
@@ -47,11 +48,13 @@ public class SchedulerRepositoryContainer extends ElasticsearchContainer {
             String elasticSearchHost = "elasticsearch.host=" + ELASTICSEARCH_HOST;
             String elasticSearchUserName = "elasticsearch.username=" + ELASTICSEARCH_USERNAME;
             String elasticSearchPassword = "elasticsearch.password=" + ELASTICSEARCH_PASSWORD;
+            String minutesBeforeNow = "incident.close.minutes.before=" + MINUTES_BEFORE_NOW;
 
             TestPropertyValues.of(elasticSearchPort).applyTo(applicationContext.getEnvironment());
             TestPropertyValues.of(elasticSearchHost).applyTo(applicationContext.getEnvironment());
             TestPropertyValues.of(elasticSearchUserName).applyTo(applicationContext.getEnvironment());
             TestPropertyValues.of(elasticSearchPassword).applyTo(applicationContext.getEnvironment());
+            TestPropertyValues.of(minutesBeforeNow).applyTo(applicationContext.getEnvironment());
         }
     }
 
