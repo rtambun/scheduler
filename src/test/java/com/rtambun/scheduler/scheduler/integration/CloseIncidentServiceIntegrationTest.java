@@ -1,9 +1,11 @@
 package com.rtambun.scheduler.scheduler.integration;
 
 import com.rtambun.scheduler.scheduler.model.CloseIncident;
+import com.rtambun.scheduler.scheduler.repository.CloseIncidentRepository;
 import com.rtambun.scheduler.scheduler.service.CloseIncidentService;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EmptySource;
@@ -30,6 +32,14 @@ public class CloseIncidentServiceIntegrationTest {
     public static void destroyEnvironment() {
         SchedulerRepositoryContainer.stopSchedulerRepositoryContainer();
     }
+
+    @BeforeEach
+    public void setUp() {
+        closeIncidentRepository.deleteAll();
+    }
+
+    @Autowired
+    private CloseIncidentRepository closeIncidentRepository;
 
     @Autowired
     private CloseIncidentService closeIncidentService;
@@ -62,4 +72,28 @@ public class CloseIncidentServiceIntegrationTest {
         assertThat(actualIncidentList.get(1).getId()).isNotNull();
     }
 
+    @Test
+    public void findCloseIncidentMinutesBeforeNow_Ok() {
+        List<CloseIncident> actualCloseIncidentList = closeIncidentService.findCloseIncidentMinutesBeforeNow();
+        assertThat(actualCloseIncidentList.size()).isEqualTo(0);
+
+        CloseIncident closeIncidentOld = new CloseIncident(
+                null,
+                "type",
+                "severity",
+                Instant.now()
+                        .minusMillis((SchedulerRepositoryContainer.MINUTES_BEFORE_NOW + 1) * 60 * 1000));
+        CloseIncident saved = closeIncidentService.save(closeIncidentOld);
+        assertThat(saved).isEqualTo(closeIncidentOld);
+        assertThat(saved.getId()).isNotNull();
+
+        CloseIncident closeIncident = new CloseIncident(null, "type", "severity", Instant.now());
+        CloseIncident expected = closeIncidentService.save(closeIncident);
+        assertThat(expected).isEqualTo(closeIncident);
+        assertThat(expected.getId()).isNotNull();
+
+        actualCloseIncidentList = closeIncidentService.findCloseIncidentMinutesBeforeNow();
+        assertThat(actualCloseIncidentList.size()).isEqualTo(1);
+        assertThat(actualCloseIncidentList.get(0)).usingRecursiveComparison().isEqualTo(expected);
+    }
 }
