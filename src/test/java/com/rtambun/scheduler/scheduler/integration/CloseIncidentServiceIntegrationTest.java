@@ -1,5 +1,6 @@
 package com.rtambun.scheduler.scheduler.integration;
 
+import com.rtambun.scheduler.scheduler.integration.container.SchedulerRepositoryContainer;
 import com.rtambun.scheduler.scheduler.model.CloseIncident;
 import com.rtambun.scheduler.scheduler.repository.CloseIncidentRepository;
 import com.rtambun.scheduler.scheduler.service.CloseIncidentService;

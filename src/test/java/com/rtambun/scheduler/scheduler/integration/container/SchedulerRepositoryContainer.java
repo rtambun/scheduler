@@ -1,4 +1,4 @@
-package com.rtambun.scheduler.scheduler.integration;
+package com.rtambun.scheduler.scheduler.integration.container;
 
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.ApplicationContextInitializer;
