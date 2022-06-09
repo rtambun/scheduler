@@ -12,8 +12,8 @@ import org.springframework.data.elasticsearch.core.ElasticsearchRestTemplate;
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 
 @Configuration
-@EnableElasticsearchRepositories(basePackages = "com.rtambun.scheduler.scheduler.repository")
-@ComponentScan(basePackages = {"com.rtambun.scheduler.scheduler.service"})
+@EnableElasticsearchRepositories(basePackages = "io.github.rtambun.scheduler.repository")
+@ComponentScan(basePackages = {"io.github.rtambun.scheduler.service"})
 public class ElasticSearchConfiguration {
 
     @Value("${elasticsearch.host}")
