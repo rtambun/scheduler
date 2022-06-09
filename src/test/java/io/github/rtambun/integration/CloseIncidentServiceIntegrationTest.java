@@ -1,6 +1,7 @@
-package io.github.rtambun.scheduler.integration;
+package io.github.rtambun.integration;
 
-import io.github.rtambun.scheduler.integration.container.SchedulerRepositoryContainer;
+import io.github.rtambun.integration.container.SchedulerRepositoryContainer;
+import io.github.rtambun.scheduler.SchedulerApplication;
 import io.github.rtambun.scheduler.model.CloseIncident;
 import io.github.rtambun.scheduler.repository.CloseIncidentRepository;
 import io.github.rtambun.scheduler.service.CloseIncidentService;
@@ -20,7 +21,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@SpringBootTest(classes = SchedulerApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = SchedulerRepositoryContainer.SchedulerRepositoryInitializer.class)
 public class CloseIncidentServiceIntegrationTest {
 

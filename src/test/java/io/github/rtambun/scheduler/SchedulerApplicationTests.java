@@ -1,6 +1,6 @@
 package io.github.rtambun.scheduler;
 
-import io.github.rtambun.scheduler.integration.container.SchedulerRepositoryContainer;
+import io.github.rtambun.integration.container.SchedulerRepositoryContainer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
