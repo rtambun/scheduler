@@ -2,7 +2,7 @@ package com.rtambun.scheduler.scheduler.service;
 
 import com.rtambun.scheduler.scheduler.model.CloseIncident;
 import com.rtambun.scheduler.scheduler.repository.CloseIncidentRepository;
-import com.rtambun.scheduler.scheduler.util.IInstantProvider;
+import com.rtambun.scheduler.scheduler.service.time.IInstantProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -14,9 +14,9 @@ import java.util.stream.StreamSupport;
 @Service
 public class CloseIncidentService {
 
-    private CloseIncidentRepository closeIncidentRepository;
-    private IInstantProvider instantProvider;
-    private long minutesBeforeNow;
+    private final CloseIncidentRepository closeIncidentRepository;
+    private final IInstantProvider instantProvider;
+    private final long minutesBeforeNow;
 
     public CloseIncidentService(CloseIncidentRepository closeIncidentRepository,
                                 IInstantProvider instantProvider,

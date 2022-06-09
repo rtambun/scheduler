@@ -2,8 +2,7 @@ package com.rtambun.scheduler.scheduler.service;
 
 import com.rtambun.scheduler.scheduler.model.CloseIncident;
 import com.rtambun.scheduler.scheduler.repository.CloseIncidentRepository;
-import com.rtambun.scheduler.scheduler.util.IInstantProvider;
-import net.bytebuddy.asm.Advice;
+import com.rtambun.scheduler.scheduler.service.time.IInstantProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -69,12 +68,12 @@ class CloseIncidentServiceTest {
         Instant now = Instant.now();
         Instant now1 = Instant.now();
         List<CloseIncident> closeIncidentList = List.of(
-                new CloseIncident(null, "type", "severity", now),
-                new CloseIncident(null, "type1", "severity1", now1));
+                new CloseIncident(null, "name", "severity", "type", now),
+                new CloseIncident(null, "name", "severity1", "type1", now1));
 
         List<CloseIncident> expected = List.of(
-                new CloseIncident("id", "type", "severity", Instant.now()),
-                new CloseIncident("id1", "type1", "severity1", Instant.now()));
+                new CloseIncident("id", "name", "severity", "type", Instant.now()),
+                new CloseIncident("id1", "name", "severity1", "type1", Instant.now()));
         when(mockCloseIncidentRepository.saveAll(any())).thenReturn(expected);
 
         List<CloseIncident> actualIncidentList = closeIncidentService.saveAll(closeIncidentList);
