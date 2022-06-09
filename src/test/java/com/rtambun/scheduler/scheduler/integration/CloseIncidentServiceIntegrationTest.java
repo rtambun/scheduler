@@ -47,7 +47,7 @@ public class CloseIncidentServiceIntegrationTest {
 
     @Test
     public void saveOk() {
-        CloseIncident closeIncident = new CloseIncident(null, "type", "severity", Instant.now());
+        CloseIncident closeIncident = new CloseIncident(null, "name", "severity", "type", Instant.now());
         CloseIncident actual = closeIncidentService.save(closeIncident);
         assertThat(actual).isEqualTo(closeIncident);
         assertThat(actual.getId()).isNotNull();
@@ -64,8 +64,8 @@ public class CloseIncidentServiceIntegrationTest {
     @Test
     public void saveAllOk() {
         List<CloseIncident> closeIncidentList = List.of(
-                new CloseIncident(null, "type", "severity", Instant.now()),
-                new CloseIncident(null, "type1", "severity1", Instant.now()));
+                new CloseIncident(null, "name", "severity", "type", Instant.now()),
+                new CloseIncident(null, "name", "severity1", "type1", Instant.now()));
         List<CloseIncident> actualIncidentList = closeIncidentService.saveAll(closeIncidentList);
         assertThat(actualIncidentList).isEqualTo(closeIncidentList);
         assertThat(actualIncidentList.size()).isEqualTo(2);
@@ -80,15 +80,16 @@ public class CloseIncidentServiceIntegrationTest {
 
         CloseIncident closeIncidentOld = new CloseIncident(
                 null,
-                "type",
+                "name",
                 "severity",
+                "type",
                 Instant.now()
                         .minusMillis((SchedulerRepositoryContainer.MINUTES_BEFORE_NOW + 1) * 60 * 1000));
         CloseIncident saved = closeIncidentService.save(closeIncidentOld);
         assertThat(saved).isEqualTo(closeIncidentOld);
         assertThat(saved.getId()).isNotNull();
 
-        CloseIncident closeIncident = new CloseIncident(null, "type", "severity", Instant.now());
+        CloseIncident closeIncident = new CloseIncident(null, "name", "severity", "type", Instant.now());
         CloseIncident expected = closeIncidentService.save(closeIncident);
         assertThat(expected).isEqualTo(closeIncident);
         assertThat(expected.getId()).isNotNull();
