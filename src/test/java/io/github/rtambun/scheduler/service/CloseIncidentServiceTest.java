@@ -92,7 +92,7 @@ class CloseIncidentServiceTest {
         when(mockInstantProvider.now()).thenReturn(time);
 
         List<CloseIncident> returnList = new ArrayList<>();
-        when(mockCloseIncidentRepository.findByClosedDateAfter(any())).thenReturn(returnList);
+        when(mockCloseIncidentRepository.findByCloseDateAfter(any())).thenReturn(returnList);
 
         List<CloseIncident> actual = closeIncidentService.findCloseIncidentMinutesBeforeNow();
         assertThat(actual.size()).isEqualTo(0);
@@ -101,7 +101,7 @@ class CloseIncidentServiceTest {
 
         ArgumentCaptor<Instant> instantArgumentCaptor = ArgumentCaptor.forClass(Instant.class);
         verify(mockCloseIncidentRepository, times(1))
-                .findByClosedDateAfter(instantArgumentCaptor.capture());
+                .findByCloseDateAfter(instantArgumentCaptor.capture());
         Instant expectedInstant = time
                 .atZone(ZoneOffset.UTC)
                 .withMinute(0)

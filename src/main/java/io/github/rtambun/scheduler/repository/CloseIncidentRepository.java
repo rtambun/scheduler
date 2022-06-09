@@ -10,5 +10,5 @@ import java.util.List;
 @Repository
 public interface CloseIncidentRepository extends ElasticsearchRepository<CloseIncident, String> {
 
-    List<CloseIncident> findByClosedDateAfter (Instant date);
+    List<CloseIncident> findByCloseDateAfter(Instant date);
 }

@@ -40,7 +40,7 @@ public class CloseIncidentService {
     }
 
     public List<CloseIncident> findCloseIncidentMinutesBeforeNow() {
-        return closeIncidentRepository.findByClosedDateAfter(
+        return closeIncidentRepository.findByCloseDateAfter(
                 instantProvider.now().minusMillis(minutesBeforeNow * 60 * 1000));
     }
 }

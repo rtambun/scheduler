@@ -1,10 +1,13 @@
 package io.github.rtambun.integration;
 
+import io.github.rtambun.integration.container.KafkaCloseIncidentContainer;
 import io.github.rtambun.integration.container.SchedulerRepositoryContainer;
+import io.github.rtambun.integration.mockserver.IsmsMockWebServer;
 import io.github.rtambun.scheduler.SchedulerApplication;
 import io.github.rtambun.scheduler.model.CloseIncident;
 import io.github.rtambun.scheduler.repository.CloseIncidentRepository;
 import io.github.rtambun.scheduler.service.CloseIncidentService;
+import okhttp3.mockwebserver.MockResponse;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,25 +17,42 @@ import org.junit.jupiter.params.provider.EmptySource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpStatus;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = SchedulerApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ContextConfiguration(initializers = SchedulerRepositoryContainer.SchedulerRepositoryInitializer.class)
+@ContextConfiguration(initializers = {
+        SchedulerRepositoryContainer.Initializer.class,
+        IsmsMockWebServer.Initializer.class,
+        KafkaCloseIncidentContainer.Initializer.class})
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class CloseIncidentServiceIntegrationTest {
 
     @BeforeAll
-    public static void setEnvironment() {
+    public static void setEnvironment() throws IOException {
         SchedulerRepositoryContainer.startSchedulerRepositoryContainer();
+        IsmsMockWebServer
+                .startIsmsMockWebServer()
+                .getMockWebServer()
+                .enqueue(new MockResponse()
+                        .setHeader("Content-Type", "application/json")
+                        .setResponseCode(HttpStatus.OK.value())
+                        .setBody("{\"Count\":\"0\", \"incidents\":[]}"));
+        KafkaCloseIncidentContainer.startKafkaCloseIncidentContainer();
     }
 
     @AfterAll
-    public static void destroyEnvironment() {
+    public static void destroyEnvironment() throws IOException {
         SchedulerRepositoryContainer.stopSchedulerRepositoryContainer();
+        IsmsMockWebServer.stopIsmsMockWebServer();
+        KafkaCloseIncidentContainer.stopKafkaCloseIncidentContainer();
     }
 
     @BeforeEach
