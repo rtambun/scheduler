@@ -18,14 +18,13 @@ public class CloseIncident {
 
     @Id
     private String id;
-
     @Field(type = FieldType.Text)
-    private String type;
-
+    private String name;
     @Field(type = FieldType.Text)
     private String severity;
-
+    @Field(type = FieldType.Text)
+    private String type;
     @Field(type = FieldType.Date_Nanos)
-    private Instant closedDate;
+    private Instant closeDate;
 
 }
