@@ -45,6 +45,7 @@ class CloseIncidentSchedulerTest {
     private IInstantProvider mockInstantProvider;
     private Jackson2ObjectMapperBuilder mockMapperBuilder;
     private StorageProvider mockStorageProvider;
+    private CloseIncidentKafka mockCloseIncidentKafka;
     private long minutesAfterClose;
     private CloseIncidentScheduler closeIncidentScheduler;
 
@@ -54,11 +55,13 @@ class CloseIncidentSchedulerTest {
         mockInstantProvider = mock(IInstantProvider.class);
         mockMapperBuilder = mock(Jackson2ObjectMapperBuilder.class);
         mockStorageProvider = mock(StorageProvider.class);
+        mockCloseIncidentKafka = mock(CloseIncidentKafka.class);
         minutesAfterClose = 5;
         closeIncidentScheduler = new CloseIncidentScheduler(mockJobScheduler,
                 mockStorageProvider,
                 mockInstantProvider,
                 mockMapperBuilder,
+                mockCloseIncidentKafka,
                 minutesAfterClose);
     }
 
@@ -76,7 +79,7 @@ class CloseIncidentSchedulerTest {
 
         verify(mockInstantProvider, times(1)).now();
         verify(mockJobScheduler, times(0)).schedule(any(Instant.class), any(JobLambda.class));
-        //verify(mockCloseIncidentKafka, times(0)).sendRemoveCloseIncidentMessage(any(MqttPayload.class));
+        verify(mockCloseIncidentKafka, times(0)).sendRemoveCloseIncidentMessage(any(IncidentKafka.class));
     }
 
     @Test
@@ -116,7 +119,7 @@ class CloseIncidentSchedulerTest {
                 .isEqualTo(new PageRequest("updatedAt:" + PageRequest.Order.DESC.name(), 0, 0));
 
         verify(mockJobScheduler, times(0)).schedule(any(Instant.class), any(JobLambda.class));
-        //verify(mockCloseIncidentKafka, times(0)).sendRemoveCloseIncidentMessage(any(MqttPayload.class));
+        verify(mockCloseIncidentKafka, times(0)).sendRemoveCloseIncidentMessage(any(IncidentKafka.class));
     }
 
     @Test
@@ -135,7 +138,7 @@ class CloseIncidentSchedulerTest {
         verify(mockInstantProvider, times(1)).now();
         verify(mockMapperBuilder, times(2)).build();
         verify(mockJobScheduler, times(0)).schedule(any(Instant.class), any(JobLambda.class));
-        //verify(mockCloseIncidentKafka, times(0)).sendRemoveCloseIncidentMessage(any(MqttPayload.class));
+        verify(mockCloseIncidentKafka, times(0)).sendRemoveCloseIncidentMessage(any(IncidentKafka.class));
     }
 
     @Test
@@ -154,7 +157,7 @@ class CloseIncidentSchedulerTest {
         verify(mockInstantProvider, times(1)).now();
         verify(mockMapperBuilder, times(2)).build();
         verify(mockJobScheduler, times(0)).schedule(any(Instant.class), any(JobLambda.class));
-        //verify(mockCloseIncidentKafka, times(0)).sendRemoveCloseIncidentMessage(any(MqttPayload.class));
+        verify(mockCloseIncidentKafka, times(0)).sendRemoveCloseIncidentMessage(any(IncidentKafka.class));
     }
 
     @Test
@@ -181,8 +184,8 @@ class CloseIncidentSchedulerTest {
         JobLambda jobLambda = jobLambdaArgumentCaptor.getValue();
         jobLambda.run();
         ArgumentCaptor<IncidentKafka> incidentKafkaArgumentCaptor = ArgumentCaptor.forClass(IncidentKafka.class);
-        //verify(mockCloseIncidentKafka, times(1))
-        //        .sendRemoveCloseIncidentMessage(incidentKafkaArgumentCaptor.capture());
+        verify(mockCloseIncidentKafka, times(1))
+                .sendRemoveCloseIncidentMessage(incidentKafkaArgumentCaptor.capture());
         IncidentKafka expected = new IncidentKafka();
         expected.setPayloadTypeCategory("RemovedBlueIndicatorFromMap");
         expected.setPayloadType("Incident");
@@ -308,8 +311,8 @@ class CloseIncidentSchedulerTest {
         JobLambda jobLambda = jobLambdaArgumentCaptor.getValue();
         jobLambda.run();
         ArgumentCaptor<IncidentKafka> incidentKafkaArgumentCaptor = ArgumentCaptor.forClass(IncidentKafka.class);
-        //verify(mockCloseIncidentKafka, times(1))
-        //        .sendRemoveCloseIncidentMessage(incidentKafkaArgumentCaptor.capture());
+        verify(mockCloseIncidentKafka, times(1))
+                .sendRemoveCloseIncidentMessage(incidentKafkaArgumentCaptor.capture());
         IncidentKafka expected = new IncidentKafka(payloadJson,
                 "Incident",
                 "RemovedBlueIndicatorFromMap");
@@ -342,8 +345,8 @@ class CloseIncidentSchedulerTest {
     void listenTopic_MqttPayload_IncidentIsReOpened_WithinXMinutes() throws JsonProcessingException {
         String payloadJson = IncidentData.IncidentData1.replace("\"closeDate\":\"27/04/2022 11:48:54\"",
                         "\"closeDate\":\"28/04/2022 14:43:00\"")
-                .replace("\"status\":{\"ID\":4,\"name\":\"Closed\"",
-                        "\"status\":{\"ID\":4,\"name\":\"Open\"");
+                .replace("\"status\":\"CLOSED\"",
+                        "\"status\":\"OPEN\"");
 
         IncidentKafka incidentKafka = new IncidentKafka(payloadJson,
                 "Incident",
@@ -400,8 +403,8 @@ class CloseIncidentSchedulerTest {
     void listenTopic_MqttPayload_IncidentIsReOpened_AfterXMinutes() throws JsonProcessingException {
         String payloadJson = IncidentData.IncidentData1.replace("\"closedDate\":\"27/04/2022 11:48:54\"",
                         "\"closedDate\":\"28/04/2022 14:43:00\"")
-                .replace("\"status\":{\"ID\":4,\"name\":\"Closed\"",
-                        "\"status\":{\"ID\":4,\"name\":\"Open\"");
+                .replace("\"status\":\"CLOSED\"",
+                        "\"status\":\"OPEN\"");
 
         IncidentKafka incidentKafka = new IncidentKafka(payloadJson,
                 "Incident",
@@ -461,8 +464,8 @@ class CloseIncidentSchedulerTest {
             throws JsonProcessingException {
         String payloadJson = IncidentData.IncidentData1.replace("\"closeDate\":\"27/04/2022 11:48:54\"",
                         "\"closeDate\":\"28/04/2022 14:43:00\"")
-                .replace("\"status\":{\"ID\":4,\"name\":\"Closed\"",
-                        "\"status\":{\"ID\":4,\"name\":\"Open\"");
+                .replace("\"status\":\"CLOSED\"",
+                        "\"status\":\"OPEN\"");
 
         IncidentKafka incidentKafka = new IncidentKafka(payloadJson,
                 "Incident",
@@ -503,8 +506,8 @@ class CloseIncidentSchedulerTest {
 
     static Stream<Arguments> getData_listenTopic_MqttPayload_IncidentIsReOpened_NoOngoingJobOrJobIsDifferentLabel() {
         String payloadJsonStored = IncidentData.IncidentData1.replace("\"closedDate\":\"27/04/2022 11:48:54\"",
-                        "\"closedDate\":\"28/04/2022 14:43:00\"")
-                .replace("\"label\":\"TU/20220427/0002\"", "\"label\":\"TU/20220427/0001\"");
+                        "\"closeDate\":\"28/04/2022 14:43:00\"")
+                .replace("\"label\":\"incident_label\"", "\"label\":\"incident_label1\"");
         IncidentKafka incidentKafkaStored = new IncidentKafka(payloadJsonStored,
                 "Incident",
                 "IncidentStatusUpdated");

@@ -27,24 +27,24 @@ import java.util.List;
 @Log4j2
 public class CloseIncidentScheduler {
 
-    private final static String INCIDENT_STATUS_CLOSED = "Closed";
-    private final static String INCIDENT_STATUS_OPEN = "Open";
-
     private final JobScheduler jobScheduler;
     private final StorageProvider storageProvider;
     private final IInstantProvider instantProvider;
     private final Jackson2ObjectMapperBuilder mapperBuilder;
+    private final CloseIncidentKafka closeIncidentKafka;
     private final long minutesAfterClose;
 
     public CloseIncidentScheduler(JobScheduler jobScheduler,
                                   StorageProvider storageProvider,
                                   IInstantProvider instantProvider,
                                   Jackson2ObjectMapperBuilder mapperBuilder,
+                                  CloseIncidentKafka closeIncidentKafka,
                                   @Value("${incident.close.minutes.after}") long minutesAfterClose) {
         this.jobScheduler = jobScheduler;
         this.storageProvider = storageProvider;
         this.instantProvider = instantProvider;
         this.mapperBuilder = mapperBuilder;
+        this.closeIncidentKafka = closeIncidentKafka;
         this.minutesAfterClose = minutesAfterClose;
     }
 
@@ -122,9 +122,8 @@ public class CloseIncidentScheduler {
                 String messageInfo;
                 if (showingEndData.isAfter(now)) {
                     messageInfo = "Incident {} showing end date {} is after current time, job is scheduled";
-                    //jobScheduler.schedule(showingEndData, () -> closeIncidentKafka.sendRemoveCloseIncidentMessage(
-                    //        mqttPayload));
-                    jobScheduler.schedule(showingEndData, () -> {});
+                    jobScheduler.schedule(showingEndData, () -> closeIncidentKafka.sendRemoveCloseIncidentMessage(
+                            mqttPayload));
                 } else {
                     messageInfo = "Incident {} showing end date {} is before current time, job is not scheduled";
                 }
