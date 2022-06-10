@@ -39,7 +39,7 @@ public class CloseIncidentServiceIntegrationTest {
     public static void setEnvironment() throws IOException {
         SchedulerRepositoryContainer.startSchedulerRepositoryContainer();
         IncidentProviderMockWebServer
-                .startIsmsMockWebServer()
+                .startIncidentProviderMockWebServer()
                 .getMockWebServer()
                 .enqueue(new MockResponse()
                         .setHeader("Content-Type", "application/json")
@@ -51,7 +51,7 @@ public class CloseIncidentServiceIntegrationTest {
     @AfterAll
     public static void destroyEnvironment() throws IOException {
         SchedulerRepositoryContainer.stopSchedulerRepositoryContainer();
-        IncidentProviderMockWebServer.stopIsmsMockWebServer();
+        IncidentProviderMockWebServer.stopIncidentProviderMockWebServer();
         KafkaCloseIncidentContainer.stopKafkaCloseIncidentContainer();
     }
 

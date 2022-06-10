@@ -66,7 +66,7 @@ public class CloseIncidentInitializationTest {
                 "\"incidents\":["+ incidentPayload +"]}";
 
         IncidentProviderMockWebServer
-                .startIsmsMockWebServer()
+                .startIncidentProviderMockWebServer()
                 .getMockWebServer()
                 .enqueue(new MockResponse()
                         .setHeader("Content-Type", "application/json")
@@ -79,7 +79,7 @@ public class CloseIncidentInitializationTest {
     @AfterAll
     private static void tearDown() throws IOException {
         SchedulerRepositoryContainer.stopSchedulerRepositoryContainer();
-        IncidentProviderMockWebServer.stopIsmsMockWebServer();
+        IncidentProviderMockWebServer.stopIncidentProviderMockWebServer();
         KafkaCloseIncidentContainer.stopKafkaCloseIncidentContainer();
     }
 

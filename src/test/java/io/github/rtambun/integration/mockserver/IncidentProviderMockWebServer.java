@@ -15,14 +15,14 @@ public class IncidentProviderMockWebServer {
 
     private static IncidentProviderMockWebServer incidentProviderMockWebServer;
 
-    public static IncidentProviderMockWebServer startIsmsMockWebServer() throws IOException {
+    public static IncidentProviderMockWebServer startIncidentProviderMockWebServer() throws IOException {
         if (incidentProviderMockWebServer == null) {
             incidentProviderMockWebServer = new IncidentProviderMockWebServer();
         }
         return incidentProviderMockWebServer;
     }
 
-    public static void stopIsmsMockWebServer() throws IOException {
+    public static void stopIncidentProviderMockWebServer() throws IOException {
         if (incidentProviderMockWebServer != null) {
             incidentProviderMockWebServer.mockWebServer.shutdown();
             incidentProviderMockWebServer = null;

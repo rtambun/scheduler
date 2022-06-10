@@ -27,7 +27,7 @@ class SchedulerApplicationTests {
 	public static void setEnvironment() throws IOException {
 		SchedulerRepositoryContainer.startSchedulerRepositoryContainer();
 		IncidentProviderMockWebServer
-				.startIsmsMockWebServer()
+				.startIncidentProviderMockWebServer()
 				.getMockWebServer()
 				.enqueue(new MockResponse()
 						.setHeader("Content-Type", "application/json")
@@ -39,7 +39,7 @@ class SchedulerApplicationTests {
 	@AfterAll
 	public static void destroyEnvironment() throws IOException {
 		SchedulerRepositoryContainer.stopSchedulerRepositoryContainer();
-		IncidentProviderMockWebServer.stopIsmsMockWebServer();
+		IncidentProviderMockWebServer.stopIncidentProviderMockWebServer();
 		KafkaCloseIncidentContainer.stopKafkaCloseIncidentContainer();
 	}
 
