@@ -68,7 +68,7 @@ class CloseIncidentKafkaTest {
     }
 
     @Test
-    void sendRemoveCloseIncidentMessage_MqttPayload() throws JsonProcessingException {
+    void sendRemoveCloseIncidentMessage_KafkaPayload() throws JsonProcessingException {
         IncidentKafka expected = new IncidentKafka(
                 IncidentData.IncidentData1,
                 "Incident",
@@ -94,7 +94,7 @@ class CloseIncidentKafkaTest {
     @ParameterizedTest
     @NullSource
     @MethodSource(value = "getData_sendRemoveCloseIncidentMessage_MqttPayload_FormatWrong")
-    void sendRemoveCloseIncidentMessage_MqttPayload_FormatWrong(String payload) {
+    void sendRemoveCloseIncidentMessage_KafkaPayload_FormatWrong(String payload) {
         IncidentKafka expected = new IncidentKafka(
                 payload,
                 "Incident",
@@ -113,9 +113,9 @@ class CloseIncidentKafkaTest {
                 Arguments.of(""),
                 Arguments.of(" "),
                 Arguments.of("\"key\":\"value\""),
-                Arguments.of(IncidentData.IncidentData1.replace("\"label\":\"TU/20220427/0002\"",
+                Arguments.of(IncidentData.IncidentData1.replace("\"label\":\"incident_label\"",
                         "\"label\":\"\"")),
-                Arguments.of(IncidentData.IncidentData1.replace("\"label\":\"TU/20220427/0002\"",
+                Arguments.of(IncidentData.IncidentData1.replace("\"label\":\"incident_label\"",
                         "\"label\":null"))
                 );
     }
