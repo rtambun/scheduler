@@ -1,0 +1,78 @@
+{
+  "properties": [
+    {
+      "name": "elasticsearch.host",
+      "type": "java.lang.String",
+      "description": "URL for elasticsearch database."
+    },
+    {
+      "name": "elasticsearch.port",
+      "type": "java.lang.String",
+      "description": "Port for elasticsearch database."
+    },
+    {
+      "name": "elasticsearch.username",
+      "type": "java.lang.String",
+      "description": "Username for elasticsearch database."
+    },
+    {
+      "name": "elasticsearch.password",
+      "type": "java.lang.String",
+      "description": "Password for elasticsearch database."
+    },
+    {
+      "name": "incident.close.minutes.before",
+      "type": "java.lang.String",
+      "description": "Duration of minutes before now where incident are closed."
+    },
+    {
+      "name": "incident.close.minutes.after",
+      "type": "java.lang.String",
+      "description": "Duration of minutes after incident closed to send kafka message to remove blue indicator in the map."
+    },
+    {
+      "name": "incident.close.provider.url",
+      "type": "java.lang.String",
+      "description": "URL for incident provider end point."
+    },
+    {
+      "name": "incident.close.provider.path",
+      "type": "java.lang.String",
+      "description": "URL path for incident provider end point."
+    },
+    {
+      "name": "incident.close.provider.timeout",
+      "type": "java.lang.String",
+      "description": "Timeout when connecting to incident provider end point."
+    },
+    {
+      "name": "incident.kafka.topic",
+      "type": "java.lang.String",
+      "description": "Kafka topic for used for incident."
+    },
+    {
+      "name": "kafka.bootstrap.server1",
+      "type": "java.lang.String",
+      "description": "Kafka bootstrap server 1."
+    },
+    {
+      "name": "kafka.bootstrap.server2",
+      "type": "java.lang.String",
+      "description": "Kafka bootstrap server 2."
+    },
+    {
+      "name": "kafka.bootstrap.server3",
+      "type": "java.lang.String",
+      "description": "Kafka bootstrap server 3."
+    },
+    {
+      "name": "kafka.producer.retries",
+      "type": "java.lang.String",
+      "description": "Kafka producer number of retries."
+    },
+    {
+      "name": "kafka.client.id",
+      "type": "java.lang.String",
+      "description": "Kafka client id."
+    }
+  ] }

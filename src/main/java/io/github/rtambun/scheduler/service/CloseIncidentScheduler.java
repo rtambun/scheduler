@@ -74,7 +74,7 @@ public class CloseIncidentScheduler {
         }
     }
 
-    @KafkaListener(topics = "${isms.kafka.topic}", groupId = "${kafka.client.id}")
+    @KafkaListener(topics = "${incident.kafka.topic}", groupId = "${kafka.client.id}")
     public void listenTopic(ObjectNode objectNode) {
 
         log.info("Message is {}", objectNode);

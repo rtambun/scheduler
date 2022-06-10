@@ -42,9 +42,9 @@ public class KafkaCloseIncidentContainer extends KafkaContainer {
             String kafkaBootStrapServer2 = "kafka.bootstrap.server2=" + bootStrapServer;
             String kafkaBootStrapServer3 = "kafka.bootstrap.server3=" + bootStrapServer;
             String kafkaProducerRetries = "kafka.producer.retries=3";
-            String kafkaClientId = "kafka.client.id=ismsagent";
+            String kafkaClientId = "kafka.client.id=incident-client1";
             String kafkaClientIdForTest = "kafka.client.test.id=test";
-            String ismsKafkaTopic = "isms.kafka.topic=inc";
+            String incidentKafkaTopic = "incident.kafka.topic=inc";
 
             TestPropertyValues.of(kafkaBootStrapServer1).applyTo(applicationContext.getEnvironment());
             TestPropertyValues.of(kafkaBootStrapServer2).applyTo(applicationContext.getEnvironment());
@@ -52,7 +52,7 @@ public class KafkaCloseIncidentContainer extends KafkaContainer {
             TestPropertyValues.of(kafkaProducerRetries).applyTo(applicationContext.getEnvironment());
             TestPropertyValues.of(kafkaClientId).applyTo(applicationContext.getEnvironment());
             TestPropertyValues.of(kafkaClientIdForTest).applyTo(applicationContext.getEnvironment());
-            TestPropertyValues.of(ismsKafkaTopic).applyTo(applicationContext.getEnvironment());
+            TestPropertyValues.of(incidentKafkaTopic).applyTo(applicationContext.getEnvironment());
         }
     }
 }

@@ -23,7 +23,7 @@ public class CloseIncidentKafka {
 
     public CloseIncidentKafka(KafkaTemplate<String, Object> kafkaTemplate,
                               Jackson2ObjectMapperBuilder mapperBuilder,
-                              @Value("${isms.kafka.topic}") String kafkaTopicInc) {
+                              @Value("${incident.kafka.topic}") String kafkaTopicInc) {
         this.kafkaTemplate = kafkaTemplate;
         this.mapperBuilder = mapperBuilder;
         this.kafkaTopicInc = kafkaTopicInc;

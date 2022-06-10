@@ -13,18 +13,18 @@ import java.util.List;
 @Log4j2
 public class ElasticSearchInitializer implements CommandLineRunner {
 
-    private final IncidentProviderClient ismsEpClient;
+    private final IncidentProviderClient incidentProviderClient;
     private final CloseIncidentScheduler closeIncidentScheduler;
 
     public ElasticSearchInitializer(IncidentProviderClient incidentProviderClient,
                                     CloseIncidentScheduler closeIncidentScheduler) {
-        this.ismsEpClient = incidentProviderClient;
+        this.incidentProviderClient = incidentProviderClient;
         this.closeIncidentScheduler = closeIncidentScheduler;
     }
 
     @Override
     public void run(String... args) throws Exception {
-        List<Incident> closeIncidents = ismsEpClient.getCloseIncident();
+        List<Incident> closeIncidents = incidentProviderClient.getCloseIncident();
         if (closeIncidents != null) {
             closeIncidents.forEach(closeIncidentScheduler::scheduleRemoveCloseIncident);
         }

@@ -107,7 +107,7 @@ public class CloseIncidentInitializationTest {
 
     private ObjectNode objectNode;
 
-    @KafkaListener(topics = "${isms.kafka.topic}", groupId = "${kafka.client.test.id}")
+    @KafkaListener(topics = "${incident.kafka.topic}", groupId = "${kafka.client.test.id}")
     public void listenTopic(ObjectNode objectNode) {
 
         log.info("Message is {}", objectNode);
