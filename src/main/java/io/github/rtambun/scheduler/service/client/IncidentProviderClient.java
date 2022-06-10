@@ -24,10 +24,10 @@ public class IncidentProviderClient {
     private final String closeIncidentWithBasicDataPath;
     private final WebClient webClient;
 
-    public IncidentProviderClient(@Value("{incident.close.provider.url}") String incidentProviderUrl,
-                                  @Value("{incident.close.provider.path}")
+    public IncidentProviderClient(@Value("${incident.close.provider.url}") String incidentProviderUrl,
+                                  @Value("${incident.close.provider.path}")
                                           String closeIncidentWithBasicDataPath,
-                                  @Value("{incident.close.provider.timeout}") int connectionTimeOut) {
+                                  @Value("${incident.close.provider.timeout}") int connectionTimeOut) {
         this.incidentProviderUrl = incidentProviderUrl;
         this.closeIncidentWithBasicDataPath = closeIncidentWithBasicDataPath;
 

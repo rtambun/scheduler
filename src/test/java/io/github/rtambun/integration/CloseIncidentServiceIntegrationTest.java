@@ -2,7 +2,7 @@ package io.github.rtambun.integration;
 
 import io.github.rtambun.integration.container.KafkaCloseIncidentContainer;
 import io.github.rtambun.integration.container.SchedulerRepositoryContainer;
-import io.github.rtambun.integration.mockserver.IsmsMockWebServer;
+import io.github.rtambun.integration.mockserver.IncidentProviderMockWebServer;
 import io.github.rtambun.scheduler.SchedulerApplication;
 import io.github.rtambun.scheduler.model.CloseIncident;
 import io.github.rtambun.scheduler.repository.CloseIncidentRepository;
@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(classes = SchedulerApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = {
         SchedulerRepositoryContainer.Initializer.class,
-        IsmsMockWebServer.Initializer.class,
+        IncidentProviderMockWebServer.Initializer.class,
         KafkaCloseIncidentContainer.Initializer.class})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class CloseIncidentServiceIntegrationTest {
@@ -38,7 +38,7 @@ public class CloseIncidentServiceIntegrationTest {
     @BeforeAll
     public static void setEnvironment() throws IOException {
         SchedulerRepositoryContainer.startSchedulerRepositoryContainer();
-        IsmsMockWebServer
+        IncidentProviderMockWebServer
                 .startIsmsMockWebServer()
                 .getMockWebServer()
                 .enqueue(new MockResponse()
@@ -51,7 +51,7 @@ public class CloseIncidentServiceIntegrationTest {
     @AfterAll
     public static void destroyEnvironment() throws IOException {
         SchedulerRepositoryContainer.stopSchedulerRepositoryContainer();
-        IsmsMockWebServer.stopIsmsMockWebServer();
+        IncidentProviderMockWebServer.stopIsmsMockWebServer();
         KafkaCloseIncidentContainer.stopKafkaCloseIncidentContainer();
     }
 

@@ -16,7 +16,6 @@ import org.jobrunr.storage.JobStats;
 import org.jobrunr.storage.PageRequest;
 import org.jobrunr.storage.StorageProvider;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
@@ -64,12 +63,12 @@ public class CloseIncidentScheduler {
         log.info("Current time {}", now);
 
         try {
-            IncidentKafka mqttPayload = new IncidentKafka();
-            mqttPayload.setPayload(objectMapper.writeValueAsString(incident));
-            mqttPayload.setPayloadType(IncidentKafka.INCIDENT_PAYLOAD_TYPE_INCIDENT);
-            mqttPayload.setPayloadTypeCategory(IncidentKafka.INCIDENT_PAYLOAD_CATEGORY_INCIDENT_STATUS_UPDATE);
+            IncidentKafka kafkaPayload = new IncidentKafka();
+            kafkaPayload.setPayload(objectMapper.writeValueAsString(incident));
+            kafkaPayload.setPayloadType(IncidentKafka.INCIDENT_PAYLOAD_TYPE_INCIDENT);
+            kafkaPayload.setPayloadTypeCategory(IncidentKafka.INCIDENT_PAYLOAD_CATEGORY_INCIDENT_STATUS_UPDATE);
 
-            scheduleJob(mqttPayload, now);
+            scheduleJob(kafkaPayload, now);
         }catch (JsonProcessingException jpe) {
             log.error("Error processing object, {}", jpe.getMessage());
         }
@@ -90,34 +89,34 @@ public class CloseIncidentScheduler {
         }
     }
 
-    private void scheduleJob(IncidentKafka mqttPayload, Instant now) throws JsonProcessingException {
-        if (mqttPayload.getPayloadType() == null || mqttPayload.getPayloadTypeCategory() == null) {
+    private void scheduleJob(IncidentKafka kafkaPayload, Instant now) throws JsonProcessingException {
+        if (kafkaPayload.getPayloadType() == null || kafkaPayload.getPayloadTypeCategory() == null) {
             log.error("Either PayloadType or PayloadTypeCategory is null");
             return;
         }
 
-        if (mqttPayload
+        if (kafkaPayload
                 .getPayloadType()
                 .equalsIgnoreCase(IncidentKafka.INCIDENT_PAYLOAD_TYPE_INCIDENT) &&
-                mqttPayload
+                kafkaPayload
                         .getPayloadTypeCategory()
                         .equalsIgnoreCase(IncidentKafka.INCIDENT_PAYLOAD_CATEGORY_INCIDENT_STATUS_UPDATE)) {
-            if (mqttPayload.getPayload() == null) {
+            if (kafkaPayload.getPayload() == null) {
                 log.error("Payload is null");
                 return;
             }
-            Incident incident = objectMapper.readValue(mqttPayload.getPayload(), new TypeReference<>() {});
+            Incident incident = objectMapper.readValue(kafkaPayload.getPayload(), new TypeReference<>() {});
             if (incident.getStatus() == Status.CLOSED) {
                 log.info("Incident {} is closed, schedule sending message",
                         incident.getLabel());
-                mqttPayload.setPayloadTypeCategory(
+                kafkaPayload.setPayloadTypeCategory(
                         IncidentKafka.INCIDENT_PAYLOAD_CATEGORY_INCIDENT_REMOVE_BLUE_INDICATOR_FROM_MAP);
                 Instant showingEndData = incident.getCloseDate().minusSeconds(-60 * minutesAfterClose);
                 String messageInfo;
                 if (showingEndData.isAfter(now)) {
                     messageInfo = "Incident {} showing end date {} is after current time, job is scheduled";
                     jobScheduler.schedule(showingEndData, () -> closeIncidentKafka.sendRemoveCloseIncidentMessage(
-                            mqttPayload));
+                            kafkaPayload));
                 } else {
                     messageInfo = "Incident {} showing end date {} is before current time, job is not scheduled";
                 }

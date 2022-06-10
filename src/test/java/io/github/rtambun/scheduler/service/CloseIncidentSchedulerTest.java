@@ -119,6 +119,7 @@ class CloseIncidentSchedulerTest {
         verify(mockCloseIncidentKafka, times(0)).sendRemoveCloseIncidentMessage(any(IncidentKafka.class));
     }
 
+
     @Test
     void scheduleRemoveCloseIncident_CloseDateIsMoreThanNowMinusMinutesAfterClose() {
         Instant now = InstantGenerator.generateInstantUTC(2022, 4, 25, 17, 35, 6);
@@ -151,6 +152,26 @@ class CloseIncidentSchedulerTest {
         verify(mockInstantProvider, times(1)).now();
         verify(mockJobScheduler, times(0)).schedule(any(Instant.class), any(JobLambda.class));
         verify(mockCloseIncidentKafka, times(0)).sendRemoveCloseIncidentMessage(any(IncidentKafka.class));
+    }
+
+    @Test
+    void scheduleRemoveUnknownIncident_CloseDateIsAfterThanNowMinusMinutesAfterClose() {
+        Instant now = InstantGenerator.generateInstantUTC(2022, 4, 25, 17, 35, 6);
+
+        Incident incident = new Incident();
+        incident.setStatus(Status.UNKNOWN);
+        incident.setCloseDate(now.minusSeconds(minutesAfterClose * 60 - 1));
+
+        when(mockInstantProvider.now()).thenReturn(now);
+
+        closeIncidentScheduler.scheduleRemoveCloseIncident(incident);
+
+        verify(mockInstantProvider, times(1)).now();
+        verify(mockJobScheduler, times(0)).schedule(any(Instant.class), any(JobLambda.class));
+        verify(mockCloseIncidentKafka, times(0))
+                .sendRemoveCloseIncidentMessage(any(IncidentKafka.class));
+        verify(mockCloseIncidentKafka, times(0))
+                .sendRemoveCloseIncidentMessage(any(CloseIncident.class));
     }
 
     @Test
@@ -199,7 +220,7 @@ class CloseIncidentSchedulerTest {
     }
 
     @ParameterizedTest
-    @MethodSource(value = "getData_listenTopic_MqttPayloadNotIncidentAndIncidentStatusUpdated_DoNothing")
+    @MethodSource(value = "getData_listenTopic_KafkaPayloadNotIncidentAndIncidentStatusUpdated_DoNothing")
     void listenTopic_KafkaPayloadNotIncidentAndIncidentStatusUpdated_DoNothing(String payloadType,
                                                                               String payloadTypeCategory) throws JsonProcessingException {
         String jsonPayload = "{\"Payload\":\"\"," +
@@ -213,7 +234,7 @@ class CloseIncidentSchedulerTest {
         verify(mockJobScheduler, times(0)).schedule(any(Instant.class), any(JobLambda.class));
     }
 
-    static Stream<Arguments> getData_listenTopic_MqttPayloadNotIncidentAndIncidentStatusUpdated_DoNothing() {
+    static Stream<Arguments> getData_listenTopic_KafkaPayloadNotIncidentAndIncidentStatusUpdated_DoNothing() {
         return Stream.of(Arguments.of(null, null),
                 Arguments.of(null, "\"\""),
                 Arguments.of("\"\"", null),
@@ -229,7 +250,7 @@ class CloseIncidentSchedulerTest {
 
     @ParameterizedTest
     @NullSource
-    void listenTopic_MqttPayloadValueIsNull(String payload) throws JsonProcessingException {
+    void listenTopic_KafkaPayloadValueIsNull(String payload) throws JsonProcessingException {
         String jsonPayload = "{\"Payload\":" + payload + "," +
                 "\"PayloadType\":\"Incident\"," +
                 "\"PayloadTypeCategory\":\"IncidentStatusUpdated\"}";
@@ -243,7 +264,7 @@ class CloseIncidentSchedulerTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"\"\""})
-    void listenTopic_MqttPayloadValueIsEmpty(String payload) throws JsonProcessingException {
+    void listenTopic_KafkaPayloadValueIsEmpty(String payload) throws JsonProcessingException {
         String jsonPayload = "{\"Payload\":" + payload + "," +
                 "\"PayloadType\":\"Incident\"," +
                 "\"PayloadTypeCategory\":\"IncidentStatusUpdated\"}";
@@ -256,7 +277,7 @@ class CloseIncidentSchedulerTest {
     }
 
     @Test
-    void listenTopic_MqttPayload_IncidentIsClosed_WithinXMinutes() throws Exception {
+    void listenTopic_KafkaPayload_IncidentIsClosed_WithinXMinutes() throws Exception {
         String closeDate = "28/04/2022 14:43:00";
         String payloadJson = IncidentData.IncidentData1.replace("\"closeDate\":\"27/04/2022 11:48:54\"",
                 "\"closeDate\":\"28/04/2022 14:43:00\"");
@@ -265,8 +286,8 @@ class CloseIncidentSchedulerTest {
                 "Incident",
                 "IncidentStatusUpdated");
 
-        String mqttJsonPayload = new ObjectMapper().writeValueAsString(incidentKafka);
-        ObjectNode objectNode = (ObjectNode) new ObjectMapper().readTree(mqttJsonPayload);
+        String kafkaJsonPayload = new ObjectMapper().writeValueAsString(incidentKafka);
+        ObjectNode objectNode = (ObjectNode) new ObjectMapper().readTree(kafkaJsonPayload);
 
         when(mockInstantProvider.now()).thenReturn(InstantGenerator.generateInstantUTC(2022, 4, 28, 14, 42, 0));
 
@@ -298,15 +319,15 @@ class CloseIncidentSchedulerTest {
 
     @ParameterizedTest
     @ValueSource(ints = {5,6})
-    void listenTopic_MqttPayload_IncidentIsClosed_AfterXMinutes(int minutesAfterClose) throws JsonProcessingException {
+    void listenTopic_KafkaPayload_IncidentIsClosed_AfterXMinutes(int minutesAfterClose) throws JsonProcessingException {
         String payloadJson = IncidentData.IncidentData1.replace("\"closedDate\":\"27/04/2022 11:48:54\"",
                 "\"closedDate\":\"28/04/2022 14:43:00\"");
         IncidentKafka incidentKafka = new IncidentKafka(payloadJson,
                 "Incident",
                 "IncidentStatusUpdated");
 
-        String mqttJsonPayload = new ObjectMapper().writeValueAsString(incidentKafka);
-        ObjectNode objectNode = (ObjectNode) new ObjectMapper().readTree(mqttJsonPayload);
+        String kafkaJsonPayload = new ObjectMapper().writeValueAsString(incidentKafka);
+        ObjectNode objectNode = (ObjectNode) new ObjectMapper().readTree(kafkaJsonPayload);
 
         when(mockInstantProvider.now()).thenReturn(InstantGenerator.generateInstantUTC(2022, 4, 28, 14, 43+minutesAfterClose, 0));
 
@@ -317,7 +338,7 @@ class CloseIncidentSchedulerTest {
     }
 
     @Test
-    void listenTopic_MqttPayload_IncidentIsReOpened_WithinXMinutes() throws JsonProcessingException {
+    void listenTopic_KafkaPayload_IncidentIsReOpened_WithinXMinutes() throws JsonProcessingException {
         String payloadJson = IncidentData.IncidentData1.replace("\"closeDate\":\"27/04/2022 11:48:54\"",
                         "\"closeDate\":\"28/04/2022 14:43:00\"")
                 .replace("\"status\":\"CLOSED\"",
@@ -327,8 +348,8 @@ class CloseIncidentSchedulerTest {
                 "Incident",
                 "IncidentStatusUpdated");
 
-        String mqttJsonPayload = new ObjectMapper().writeValueAsString(incidentKafka);
-        ObjectNode objectNode = (ObjectNode) new ObjectMapper().readTree(mqttJsonPayload);
+        String kafkaJsonPayload = new ObjectMapper().writeValueAsString(incidentKafka);
+        ObjectNode objectNode = (ObjectNode) new ObjectMapper().readTree(kafkaJsonPayload);
 
         Instant now = InstantGenerator.generateInstantUTC(2022,
                 4,
@@ -373,7 +394,7 @@ class CloseIncidentSchedulerTest {
     }
 
     @Test
-    void listenTopic_MqttPayload_IncidentIsReOpened_AfterXMinutes() throws JsonProcessingException {
+    void listenTopic_KafkaPayload_IncidentIsReOpened_AfterXMinutes() throws JsonProcessingException {
         String payloadJson = IncidentData.IncidentData1.replace("\"closedDate\":\"27/04/2022 11:48:54\"",
                         "\"closedDate\":\"28/04/2022 14:43:00\"")
                 .replace("\"status\":\"CLOSED\"",
@@ -383,8 +404,8 @@ class CloseIncidentSchedulerTest {
                 "Incident",
                 "IncidentStatusUpdated");
 
-        String mqttJsonPayload = new ObjectMapper().writeValueAsString(incidentKafka);
-        ObjectNode objectNode = (ObjectNode) new ObjectMapper().readTree(mqttJsonPayload);
+        String kafkaJsonPayload = new ObjectMapper().writeValueAsString(incidentKafka);
+        ObjectNode objectNode = (ObjectNode) new ObjectMapper().readTree(kafkaJsonPayload);
 
         Instant now = InstantGenerator.generateInstantUTC(2022,
                 4,
@@ -430,8 +451,8 @@ class CloseIncidentSchedulerTest {
 
     @ParameterizedTest
     @NullSource
-    @MethodSource(value = "getData_listenTopic_MqttPayload_IncidentIsReOpened_NoOngoingJobOrJobIsDifferentLabel")
-    void listenTopic_MqttPayload_IncidentIsReOpened_NoOngoingJobOrJobIsDifferentLabel(List<Job> storedJob)
+    @MethodSource(value = "getData_listenTopic_KafkaPayload_IncidentIsReOpened_NoOngoingJobOrJobIsDifferentLabel")
+    void listenTopic_KafkaPayload_IncidentIsReOpened_NoOngoingJobOrJobIsDifferentLabel(List<Job> storedJob)
             throws JsonProcessingException {
         String payloadJson = IncidentData.IncidentData1.replace("\"closeDate\":\"27/04/2022 11:48:54\"",
                         "\"closeDate\":\"28/04/2022 14:43:00\"")
@@ -442,8 +463,8 @@ class CloseIncidentSchedulerTest {
                 "Incident",
                 "IncidentStatusUpdated");
 
-        String mqttJsonPayload = new ObjectMapper().writeValueAsString(incidentKafka);
-        ObjectNode objectNode = (ObjectNode) new ObjectMapper().readTree(mqttJsonPayload);
+        String kafkaJsonPayload = new ObjectMapper().writeValueAsString(incidentKafka);
+        ObjectNode objectNode = (ObjectNode) new ObjectMapper().readTree(kafkaJsonPayload);
 
         Instant now = InstantGenerator.generateInstantUTC(2022,
                 4,
@@ -473,7 +494,7 @@ class CloseIncidentSchedulerTest {
         verify(mockStorageProvider, times(0)).deletePermanently(any());
     }
 
-    static Stream<Arguments> getData_listenTopic_MqttPayload_IncidentIsReOpened_NoOngoingJobOrJobIsDifferentLabel() {
+    static Stream<Arguments> getData_listenTopic_KafkaPayload_IncidentIsReOpened_NoOngoingJobOrJobIsDifferentLabel() {
         String payloadJsonStored = IncidentData.IncidentData1.replace("\"closedDate\":\"27/04/2022 11:48:54\"",
                         "\"closeDate\":\"28/04/2022 14:43:00\"")
                 .replace("\"label\":\"incident_label\"", "\"label\":\"incident_label1\"");

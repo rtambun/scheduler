@@ -47,7 +47,7 @@
 		<dependency>
 			<groupId>io.github.rtambun</groupId>
 			<artifactId>shared-data</artifactId>
-			<version>0.2.3</version>
+			<version>0.2.4</version>
 		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
