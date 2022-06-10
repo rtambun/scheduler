@@ -1,22 +1,24 @@
 package io.github.rtambun.scheduler.service.client;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.github.rtambun.scheduler.dto.CloseIncidentWithBasicDataResponse;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.github.rtambun.dto.incident.Incident;
+import io.github.rtambun.scheduler.data.dto.IncidentData;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.SocketPolicy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
-import reactor.core.publisher.Mono;
-import reactor.test.StepVerifier;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class IncidentProviderClientTest {
     MockWebServer mockWebServer;
@@ -27,8 +29,8 @@ class IncidentProviderClientTest {
         mockWebServer = new MockWebServer();
         mockWebServer.start();
         String baseUrl = String.format("http://localhost:%s", mockWebServer.getPort());
-        String closeIncidentWithBasicDataPath = "/closeIncidentWithBasicData";
-        incidentProviderClient = new IncidentProviderClient(baseUrl, closeIncidentWithBasicDataPath, new ModelMapper());
+        String path = "/incident/query";
+        incidentProviderClient = new IncidentProviderClient(baseUrl, path, 1000);
     }
 
     @AfterEach
@@ -41,12 +43,8 @@ class IncidentProviderClientTest {
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(HttpStatus.NOT_FOUND.value()));
 
-        Mono<CloseIncidentWithBasicDataResponse> response = incidentProviderClient.getCloseIncident();
-        StepVerifier.create(response)
-                .expectSubscription()
-                .expectErrorMatches(ex -> ex instanceof ClientException
-                        && ((ClientException) ex).getStatus() == ClientException.SERVICE_RESPONSE_STATUS_NON_2XX)
-                .verify();
+        ClientException ex = assertThrows(ClientException.class , () -> incidentProviderClient.getCloseIncident());
+        assertThat(ex.getStatus()).isEqualTo(ClientException.SERVICE_RESPONSE_STATUS_NON_2XX);
     }
 
     @Test
@@ -54,12 +52,8 @@ class IncidentProviderClientTest {
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(HttpStatus.INTERNAL_SERVER_ERROR.value()));
 
-        Mono<CloseIncidentWithBasicDataResponse> response = incidentProviderClient.getCloseIncident();
-        StepVerifier.create(response)
-                .expectSubscription()
-                .expectErrorMatches(ex -> ex instanceof ClientException
-                        && ((ClientException) ex).getStatus() == ClientException.SERVICE_RESPONSE_STATUS_NON_2XX)
-                .verify();
+        ClientException ex = assertThrows(ClientException.class , () -> incidentProviderClient.getCloseIncident());
+        assertThat(ex.getStatus()).isEqualTo(ClientException.SERVICE_RESPONSE_STATUS_NON_2XX);
     }
 
     @Test
@@ -67,30 +61,41 @@ class IncidentProviderClientTest {
         mockWebServer.enqueue(new MockResponse()
                 .setResponseCode(HttpStatus.OK.value())
                 .setBody("wrong data")
+                .setHeader("Content-type", "application/json")
         );
 
-        Mono<CloseIncidentWithBasicDataResponse> response = incidentProviderClient.getCloseIncident();
-        StepVerifier.create(response)
-                .expectSubscription()
-                .expectErrorMatches(ex -> ex instanceof ClientException
-                        && ((ClientException) ex).getStatus() == ClientException.SERVICE_REQUEST_FAILED)
-                .verify();
+        ClientException ex = assertThrows(ClientException.class , () -> incidentProviderClient.getCloseIncident());
+        assertThat(ex.getStatus()).isEqualTo(ClientException.SERVICE_REQUEST_FAILED);
+    }
+
+    @Test
+    void getCounterResponse_ServerTimeOut() {
+
+        mockWebServer.enqueue(new MockResponse()
+                .setSocketPolicy(SocketPolicy.NO_RESPONSE));
+
+        ClientException ex = assertThrows(ClientException.class, ()-> incidentProviderClient.getCloseIncident());
+        assertThat(ex.getStatus()).isEqualTo(ClientException.SERVICE_REQUEST_FAILED);
     }
 
     @Test
     void getCounterResponse_ServerSendCorrectMessage() throws JsonProcessingException {
+        String jsonPayload ="{\"Count\":\"1\", \"incidents\":" +
+                "[" + IncidentData.IncidentData1 + "]}";
+
         mockWebServer.enqueue(new MockResponse()
                 .setHeader("Content-Type", "application/json")
                 .setResponseCode(HttpStatus.OK.value())
-                .setBody(new ObjectMapper()
-                        .writeValueAsString(new CloseIncidentWithBasicDataResponse(1, new ArrayList<>()))));
+                .setBody(jsonPayload));
 
-        Mono<CloseIncidentWithBasicDataResponse> response = incidentProviderClient.getCloseIncident();
-        StepVerifier.create(response)
-                .expectSubscription()
-                .assertNext(result -> assertThat(result)
-                        .usingRecursiveComparison()
-                        .isEqualTo(new CloseIncidentWithBasicDataResponse(1,new ArrayList<>())))
-                .verifyComplete();
+        List<Incident> actualCloseIncident = incidentProviderClient.getCloseIncident();
+        assertThat(actualCloseIncident.size()).isEqualTo(1);
+
+        List<Incident> expectedCloseIncident = List.of(
+                new ObjectMapper()
+                        .registerModule(new JavaTimeModule())
+                        .readValue(IncidentData.IncidentData1, new TypeReference<Incident>() {})
+        );
+        assertThat(actualCloseIncident).usingRecursiveComparison().isEqualTo(expectedCloseIncident);
     }
 }
