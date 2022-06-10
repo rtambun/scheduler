@@ -32,6 +32,7 @@ class CloseIncidentKafkaTest {
     private CloseIncidentKafka closeIncidentKafka;
 
     @BeforeEach
+    @SuppressWarnings("unchecked")
     void setUp() {
         mockKafkaTemplate = mock(KafkaTemplate.class);
         mockMapperBuilder = mock(Jackson2ObjectMapperBuilder.class);
@@ -65,6 +66,25 @@ class CloseIncidentKafkaTest {
                 .usingRecursiveComparison()
                 .ignoringFields()
                 .isEqualTo(expected);
+    }
+
+    @Test
+    void sendRemoveCloseIncidentMessage_MapperThrowException_DoNothing() throws JsonProcessingException {
+
+        Instant now = InstantGenerator.generateInstantUTC(2022, 5,22, 8, 0,0);
+
+        CloseIncident expected = new CloseIncident(null,
+                "name",
+                "severity",
+                "type", now);
+
+        ObjectMapper objectMapper = mock(ObjectMapper.class);
+        when(objectMapper.writeValueAsString(any())).thenThrow(new JsonProcessingException("test behavior"){});
+        when(mockMapperBuilder.build()).thenReturn(objectMapper);
+
+        closeIncidentKafka.sendRemoveCloseIncidentMessage(expected);
+
+        verify(mockKafkaTemplate, times(0)).send(any(), any());
     }
 
     @Test
