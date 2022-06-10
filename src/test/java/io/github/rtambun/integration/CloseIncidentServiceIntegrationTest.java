@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         SchedulerRepositoryContainer.Initializer.class,
         IncidentProviderMockWebServer.Initializer.class,
         KafkaCloseIncidentContainer.Initializer.class})
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class CloseIncidentServiceIntegrationTest {
 
     @BeforeAll
@@ -68,7 +68,10 @@ public class CloseIncidentServiceIntegrationTest {
 
     @Test
     public void saveOk() {
-        CloseIncident closeIncident = new CloseIncident(null, "name", "severity", "type", Instant.now());
+        Instant now = Instant.now();
+        now = now.minusNanos(now.getNano());
+
+        CloseIncident closeIncident = new CloseIncident(null, "name", "severity", "type", now);
         CloseIncident actual = closeIncidentService.save(closeIncident);
         assertThat(actual).isEqualTo(closeIncident);
         assertThat(actual.getId()).isNotNull();
@@ -84,9 +87,12 @@ public class CloseIncidentServiceIntegrationTest {
 
     @Test
     public void saveAllOk() {
+        Instant now = Instant.now();
+        now = now.minusNanos(now.getNano());
+
         List<CloseIncident> closeIncidentList = List.of(
-                new CloseIncident(null, "name", "severity", "type", Instant.now()),
-                new CloseIncident(null, "name", "severity1", "type1", Instant.now()));
+                new CloseIncident(null, "name", "severity", "type", now),
+                new CloseIncident(null, "name", "severity1", "type1", now));
         List<CloseIncident> actualIncidentList = closeIncidentService.saveAll(closeIncidentList);
         assertThat(actualIncidentList).isEqualTo(closeIncidentList);
         assertThat(actualIncidentList.size()).isEqualTo(2);
@@ -110,7 +116,10 @@ public class CloseIncidentServiceIntegrationTest {
         assertThat(saved).isEqualTo(closeIncidentOld);
         assertThat(saved.getId()).isNotNull();
 
-        CloseIncident closeIncident = new CloseIncident(null, "name", "severity", "type", Instant.now());
+        Instant newInstant = Instant.now();
+        newInstant = newInstant.minusNanos(newInstant.getNano());
+
+        CloseIncident closeIncident = new CloseIncident(null, "name", "severity", "type", newInstant);
         CloseIncident expected = closeIncidentService.save(closeIncident);
         assertThat(expected).isEqualTo(closeIncident);
         assertThat(expected.getId()).isNotNull();
