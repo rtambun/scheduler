@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.github.rtambun.scheduler.confguration.ModelMapperConfig;
 import io.github.rtambun.scheduler.data.dto.IncidentData;
 import io.github.rtambun.scheduler.model.CloseIncident;
 import io.github.rtambun.scheduler.service.time.IInstantProvider;
@@ -27,7 +28,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -43,7 +43,6 @@ import static org.mockito.Mockito.times;
 class CloseIncidentSchedulerTest {
     private JobScheduler mockJobScheduler;
     private IInstantProvider mockInstantProvider;
-    private Jackson2ObjectMapperBuilder mockMapperBuilder;
     private StorageProvider mockStorageProvider;
     private CloseIncidentKafka mockCloseIncidentKafka;
     private long minutesAfterClose;
@@ -53,14 +52,14 @@ class CloseIncidentSchedulerTest {
     void setUp() {
         mockJobScheduler = mock(JobScheduler.class);
         mockInstantProvider = mock(IInstantProvider.class);
-        mockMapperBuilder = mock(Jackson2ObjectMapperBuilder.class);
+        ObjectMapper objectMapper = new ModelMapperConfig().objectMapper();
         mockStorageProvider = mock(StorageProvider.class);
         mockCloseIncidentKafka = mock(CloseIncidentKafka.class);
         minutesAfterClose = 5;
         closeIncidentScheduler = new CloseIncidentScheduler(mockJobScheduler,
                 mockStorageProvider,
                 mockInstantProvider,
-                mockMapperBuilder,
+                objectMapper,
                 mockCloseIncidentKafka,
                 minutesAfterClose);
     }
@@ -73,7 +72,6 @@ class CloseIncidentSchedulerTest {
 
         Instant now = InstantGenerator.generateInstantUTC(2022, 4, 25, 17, 35, 6);
         when(mockInstantProvider.now()).thenReturn(now);
-        when(mockMapperBuilder.build()).thenReturn(new ObjectMapper().registerModule(new JavaTimeModule()));
 
         closeIncidentScheduler.scheduleRemoveCloseIncident(incident);
 
@@ -90,7 +88,6 @@ class CloseIncidentSchedulerTest {
 
         Instant now = InstantGenerator.generateInstantUTC(2022, 4, 25, 17, 35, 6);
         when(mockInstantProvider.now()).thenReturn(now);
-        when(mockMapperBuilder.build()).thenReturn(new ObjectMapper().registerModule(new JavaTimeModule()));
         when(mockStorageProvider.getJobStats()).thenReturn(new JobStats(Instant.now(),
                 0L,
                 0L,
@@ -130,13 +127,11 @@ class CloseIncidentSchedulerTest {
         incident.setStatus(Status.CLOSED);
         incident.setCloseDate(now.minusSeconds(minutesAfterClose * 60 + 1));
 
-        when(mockMapperBuilder.build()).thenReturn(new ObjectMapper().registerModule(new JavaTimeModule()));
         when(mockInstantProvider.now()).thenReturn(now);
 
         closeIncidentScheduler.scheduleRemoveCloseIncident(incident);
 
         verify(mockInstantProvider, times(1)).now();
-        verify(mockMapperBuilder, times(2)).build();
         verify(mockJobScheduler, times(0)).schedule(any(Instant.class), any(JobLambda.class));
         verify(mockCloseIncidentKafka, times(0)).sendRemoveCloseIncidentMessage(any(IncidentKafka.class));
     }
@@ -149,13 +144,11 @@ class CloseIncidentSchedulerTest {
         incident.setStatus(Status.CLOSED);
         incident.setCloseDate(now.minusSeconds(minutesAfterClose * 60));
 
-        when(mockMapperBuilder.build()).thenReturn(new ObjectMapper().registerModule(new JavaTimeModule()));
         when(mockInstantProvider.now()).thenReturn(now);
 
         closeIncidentScheduler.scheduleRemoveCloseIncident(incident);
 
         verify(mockInstantProvider, times(1)).now();
-        verify(mockMapperBuilder, times(2)).build();
         verify(mockJobScheduler, times(0)).schedule(any(Instant.class), any(JobLambda.class));
         verify(mockCloseIncidentKafka, times(0)).sendRemoveCloseIncidentMessage(any(IncidentKafka.class));
     }
@@ -168,13 +161,11 @@ class CloseIncidentSchedulerTest {
         incident.setStatus(Status.CLOSED);
         incident.setCloseDate(now.minusSeconds(minutesAfterClose * 60 - 1));
 
-        when(mockMapperBuilder.build()).thenReturn(new ObjectMapper().registerModule(new JavaTimeModule()));
         when(mockInstantProvider.now()).thenReturn(now);
 
         closeIncidentScheduler.scheduleRemoveCloseIncident(incident);
 
         verify(mockInstantProvider, times(1)).now();
-        verify(mockMapperBuilder, times(2)).build();
         ArgumentCaptor<Instant> instantArgumentCaptor = ArgumentCaptor.forClass(Instant.class);
         ArgumentCaptor<JobLambda> jobLambdaArgumentCaptor = ArgumentCaptor.forClass(JobLambda.class);
         verify(mockJobScheduler, times(1)).schedule(instantArgumentCaptor.capture(),
@@ -197,33 +188,27 @@ class CloseIncidentSchedulerTest {
     }
 
     @Test
-    void listenTopic_MqttPayloadError_DoNothing() throws JsonProcessingException {
+    void listenTopic_KafkaPayloadError_DoNothing() throws JsonProcessingException {
         String jsonPayload = "{\"key\":\"value\"}";
         ObjectNode objectNode = (ObjectNode) new ObjectMapper().readTree(jsonPayload);
 
-        when(mockMapperBuilder.build()).thenReturn(new ObjectMapper().registerModule(new JavaTimeModule()));
-
         closeIncidentScheduler.listenTopic(objectNode);
 
-        verify(mockMapperBuilder, times(1)).build();
         verify(mockInstantProvider, times(0)).now();
         verify(mockJobScheduler, times(0)).schedule(any(Instant.class), any(JobLambda.class));
     }
 
     @ParameterizedTest
     @MethodSource(value = "getData_listenTopic_MqttPayloadNotIncidentAndIncidentStatusUpdated_DoNothing")
-    void listenTopic_MqttPayloadNotIncidentAndIncidentStatusUpdated_DoNothing(String payloadType,
+    void listenTopic_KafkaPayloadNotIncidentAndIncidentStatusUpdated_DoNothing(String payloadType,
                                                                               String payloadTypeCategory) throws JsonProcessingException {
         String jsonPayload = "{\"Payload\":\"\"," +
                 "\"PayloadType\":" + payloadType + "," +
                 "\"PayloadTypeCategory\":" + payloadTypeCategory + "}}";
         ObjectNode objectNode = (ObjectNode) new ObjectMapper().readTree(jsonPayload);
 
-        when(mockMapperBuilder.build()).thenReturn(new ObjectMapper().registerModule(new JavaTimeModule()));
-
         closeIncidentScheduler.listenTopic(objectNode);
 
-        verify(mockMapperBuilder, times(1)).build();
         verify(mockInstantProvider, times(1)).now();
         verify(mockJobScheduler, times(0)).schedule(any(Instant.class), any(JobLambda.class));
     }
@@ -250,11 +235,8 @@ class CloseIncidentSchedulerTest {
                 "\"PayloadTypeCategory\":\"IncidentStatusUpdated\"}";
         ObjectNode objectNode = (ObjectNode) new ObjectMapper().readTree(jsonPayload);
 
-        when(mockMapperBuilder.build()).thenReturn(new ObjectMapper().registerModule(new JavaTimeModule()));
-
         closeIncidentScheduler.listenTopic(objectNode);
 
-        verify(mockMapperBuilder, times(1)).build();
         verify(mockInstantProvider, times(1)).now();
         verify(mockJobScheduler, times(0)).schedule(any(Instant.class), any(JobLambda.class));
     }
@@ -267,11 +249,8 @@ class CloseIncidentSchedulerTest {
                 "\"PayloadTypeCategory\":\"IncidentStatusUpdated\"}";
         ObjectNode objectNode = (ObjectNode) new ObjectMapper().readTree(jsonPayload);
 
-        when(mockMapperBuilder.build()).thenReturn(new ObjectMapper().registerModule(new JavaTimeModule()));
-
         closeIncidentScheduler.listenTopic(objectNode);
 
-        verify(mockMapperBuilder, times(2)).build();
         verify(mockInstantProvider, times(1)).now();
         verify(mockJobScheduler, times(0)).schedule(any(Instant.class), any(JobLambda.class));
     }
@@ -289,12 +268,10 @@ class CloseIncidentSchedulerTest {
         String mqttJsonPayload = new ObjectMapper().writeValueAsString(incidentKafka);
         ObjectNode objectNode = (ObjectNode) new ObjectMapper().readTree(mqttJsonPayload);
 
-        when(mockMapperBuilder.build()).thenReturn(new ObjectMapper().registerModule(new JavaTimeModule()));
         when(mockInstantProvider.now()).thenReturn(InstantGenerator.generateInstantUTC(2022, 4, 28, 14, 42, 0));
 
         closeIncidentScheduler.listenTopic(objectNode);
 
-        verify(mockMapperBuilder, times(2)).build();
         verify(mockInstantProvider, times(1)).now();
         CloseIncident closeIncident = new CloseIncident(
                 "7091125584690244490",
@@ -331,12 +308,10 @@ class CloseIncidentSchedulerTest {
         String mqttJsonPayload = new ObjectMapper().writeValueAsString(incidentKafka);
         ObjectNode objectNode = (ObjectNode) new ObjectMapper().readTree(mqttJsonPayload);
 
-        when(mockMapperBuilder.build()).thenReturn(new ObjectMapper().registerModule(new JavaTimeModule()));
         when(mockInstantProvider.now()).thenReturn(InstantGenerator.generateInstantUTC(2022, 4, 28, 14, 43+minutesAfterClose, 0));
 
         closeIncidentScheduler.listenTopic(objectNode);
 
-        verify(mockMapperBuilder, times(2)).build();
         verify(mockInstantProvider, times(1)).now();
         verify(mockJobScheduler, times(0)).schedule(any(Instant.class), any(JobLambda.class));
     }
@@ -355,7 +330,6 @@ class CloseIncidentSchedulerTest {
         String mqttJsonPayload = new ObjectMapper().writeValueAsString(incidentKafka);
         ObjectNode objectNode = (ObjectNode) new ObjectMapper().readTree(mqttJsonPayload);
 
-        when(mockMapperBuilder.build()).thenReturn(new ObjectMapper().registerModule(new JavaTimeModule()));
         Instant now = InstantGenerator.generateInstantUTC(2022,
                 4,
                 28,
@@ -391,7 +365,6 @@ class CloseIncidentSchedulerTest {
 
         closeIncidentScheduler.listenTopic(objectNode);
 
-        verify(mockMapperBuilder, times(2)).build();
         verify(mockInstantProvider, times(1)).now();
         verify(mockJobScheduler, times(0)).schedule(any(Instant.class), any(JobLambda.class));
         ArgumentCaptor<UUID> uuidArgumentCaptor = ArgumentCaptor.forClass(UUID.class);
@@ -413,7 +386,6 @@ class CloseIncidentSchedulerTest {
         String mqttJsonPayload = new ObjectMapper().writeValueAsString(incidentKafka);
         ObjectNode objectNode = (ObjectNode) new ObjectMapper().readTree(mqttJsonPayload);
 
-        when(mockMapperBuilder.build()).thenReturn(new ObjectMapper().registerModule(new JavaTimeModule()));
         Instant now = InstantGenerator.generateInstantUTC(2022,
                 4,
                 28,
@@ -449,7 +421,6 @@ class CloseIncidentSchedulerTest {
 
         closeIncidentScheduler.listenTopic(objectNode);
 
-        verify(mockMapperBuilder, times(2)).build();
         verify(mockInstantProvider, times(1)).now();
         verify(mockJobScheduler, times(0)).schedule(any(Instant.class), any(JobLambda.class));
         ArgumentCaptor<UUID> uuidArgumentCaptor = ArgumentCaptor.forClass(UUID.class);
@@ -474,7 +445,6 @@ class CloseIncidentSchedulerTest {
         String mqttJsonPayload = new ObjectMapper().writeValueAsString(incidentKafka);
         ObjectNode objectNode = (ObjectNode) new ObjectMapper().readTree(mqttJsonPayload);
 
-        when(mockMapperBuilder.build()).thenReturn(new ObjectMapper().registerModule(new JavaTimeModule()));
         Instant now = InstantGenerator.generateInstantUTC(2022,
                 4,
                 28,
@@ -498,7 +468,6 @@ class CloseIncidentSchedulerTest {
 
         closeIncidentScheduler.listenTopic(objectNode);
 
-        verify(mockMapperBuilder, times(2)).build();
         verify(mockInstantProvider, times(1)).now();
         verify(mockJobScheduler, times(0)).schedule(any(Instant.class), any(JobLambda.class));
         verify(mockStorageProvider, times(0)).deletePermanently(any());

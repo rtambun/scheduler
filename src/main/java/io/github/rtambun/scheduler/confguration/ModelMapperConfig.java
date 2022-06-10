@@ -1,5 +1,8 @@
 package io.github.rtambun.scheduler.confguration;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.github.rtambun.scheduler.model.CloseIncident;
 import io.github.rtambun.dto.incident.Incident;
 import lombok.extern.log4j.Log4j2;
@@ -30,6 +33,14 @@ public class ModelMapperConfig {
     @Bean
     public Jackson2ObjectMapperBuilder jackson2ObjectMapperBuilder() {
         return new Jackson2ObjectMapperBuilder();
+    }
+
+    @Bean
+    public ObjectMapper objectMapper() {
+        return new Jackson2ObjectMapperBuilder()
+                .build()
+                .enable(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_USING_DEFAULT_VALUE)
+                .registerModule(new JavaTimeModule());
     }
 
 }

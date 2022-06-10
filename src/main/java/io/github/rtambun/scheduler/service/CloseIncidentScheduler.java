@@ -30,20 +30,20 @@ public class CloseIncidentScheduler {
     private final JobScheduler jobScheduler;
     private final StorageProvider storageProvider;
     private final IInstantProvider instantProvider;
-    private final Jackson2ObjectMapperBuilder mapperBuilder;
+    private final ObjectMapper objectMapper;
     private final CloseIncidentKafka closeIncidentKafka;
     private final long minutesAfterClose;
 
     public CloseIncidentScheduler(JobScheduler jobScheduler,
                                   StorageProvider storageProvider,
                                   IInstantProvider instantProvider,
-                                  Jackson2ObjectMapperBuilder mapperBuilder,
+                                  ObjectMapper objectMapper,
                                   CloseIncidentKafka closeIncidentKafka,
                                   @Value("${incident.close.minutes.after}") long minutesAfterClose) {
         this.jobScheduler = jobScheduler;
         this.storageProvider = storageProvider;
         this.instantProvider = instantProvider;
-        this.mapperBuilder = mapperBuilder;
+        this.objectMapper = objectMapper;
         this.closeIncidentKafka = closeIncidentKafka;
         this.minutesAfterClose = minutesAfterClose;
     }
@@ -62,8 +62,6 @@ public class CloseIncidentScheduler {
                 incident.getLabel(),
                 incident.getCloseDate());
         log.info("Current time {}", now);
-
-        ObjectMapper objectMapper = mapperBuilder.build();
 
         try {
             IncidentKafka mqttPayload = new IncidentKafka();
@@ -85,11 +83,8 @@ public class CloseIncidentScheduler {
         String payload = objectNode.toString();
 
         try {
-            ObjectMapper objectMapper = mapperBuilder.build();
             IncidentKafka incidentKafka = objectMapper.readValue(payload, new TypeReference<>() {});
             scheduleJob(incidentKafka, instantProvider.now());
-
-
         } catch (JsonProcessingException jpe) {
             log.error("Error processing message, {}", jpe.getMessage());
         }
@@ -111,7 +106,6 @@ public class CloseIncidentScheduler {
                 log.error("Payload is null");
                 return;
             }
-            ObjectMapper objectMapper = mapperBuilder.build();
             Incident incident = objectMapper.readValue(mqttPayload.getPayload(), new TypeReference<>() {});
             if (incident.getStatus() == Status.CLOSED) {
                 log.info("Incident {} is closed, schedule sending message",
