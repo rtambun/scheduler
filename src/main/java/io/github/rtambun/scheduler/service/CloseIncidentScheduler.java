@@ -140,6 +140,8 @@ public class CloseIncidentScheduler {
                                 , new TypeReference<>() {});
                         if (storedIncident.getLabel().equalsIgnoreCase(incident.getLabel())) {
                             storageProvider.deletePermanently(job.getId());
+                            log.info("Incident {} is already scheduled. Removed it from job",
+                                    incident.getLabel());
                         }
                     }
                 }
