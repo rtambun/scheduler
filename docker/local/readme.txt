@@ -1,0 +1,1 @@
+This folder is used to set up dependency server for scheduler service run locally.

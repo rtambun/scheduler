@@ -1,5 +1,6 @@
 package io.github.rtambun.scheduler.confguration;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -29,13 +30,17 @@ class ElasticSearchInitializerTest {
     void setUp() {
         mockIncidentProviderClient = mock(IncidentProviderClient.class);
         mockCloseIncidentScheduler = mock(CloseIncidentScheduler.class);
-        elasticSearchInitializer = new ElasticSearchInitializer(mockIncidentProviderClient, mockCloseIncidentScheduler);
     }
 
     @ParameterizedTest
     @NullSource
     @EmptySource
     void run_empty_or_null_list_nothing_scheduled(List<Incident> closeIncidentList) throws Exception {
+
+        elasticSearchInitializer = new ElasticSearchInitializer(mockIncidentProviderClient,
+                mockCloseIncidentScheduler,
+                ElasticSearchInitializer.PROD);
+
         when(mockIncidentProviderClient.getCloseIncident()).thenReturn(closeIncidentList);
 
         elasticSearchInitializer.run("");
@@ -45,6 +50,10 @@ class ElasticSearchInitializerTest {
 
     @Test
     void run_listWithOneElement_ElementScheduled() throws Exception {
+
+        elasticSearchInitializer = new ElasticSearchInitializer(mockIncidentProviderClient,
+                mockCloseIncidentScheduler,
+                ElasticSearchInitializer.PROD);
 
         List<Incident> closeIncidentList = List.of(
                 new ObjectMapper()
@@ -61,5 +70,26 @@ class ElasticSearchInitializerTest {
         verify(mockCloseIncidentScheduler, times(1))
                 .scheduleRemoveCloseIncident(closeIncidentArgumentCaptor.capture());
         assertThat(closeIncidentArgumentCaptor.getValue()).isEqualTo(closeIncidentList.get(0));
+    }
+
+    @Test
+    void run_OnNonProdEnvironment_DoNothing() throws Exception {
+        elasticSearchInitializer = new ElasticSearchInitializer(mockIncidentProviderClient,
+                mockCloseIncidentScheduler,
+                "dev");
+
+        List<Incident> closeIncidentList = List.of(
+                new ObjectMapper()
+                        .registerModule(new JavaTimeModule())
+                        .readValue(IncidentData.IncidentData1, new TypeReference<Incident>() {})
+        );
+
+        when(mockIncidentProviderClient.getCloseIncident()).thenReturn(closeIncidentList);
+
+        elasticSearchInitializer.run("");
+        verify(mockIncidentProviderClient, times(0)).getCloseIncident();
+
+        verify(mockCloseIncidentScheduler, times(0))
+                .scheduleRemoveCloseIncident(any());
     }
 }
