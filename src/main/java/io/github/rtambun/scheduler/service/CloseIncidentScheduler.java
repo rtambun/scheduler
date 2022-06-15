@@ -20,6 +20,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -151,4 +152,29 @@ public class CloseIncidentScheduler {
             }
         }
     }
+
+    public List<Incident> getAllScheduledIncident() throws JsonProcessingException {
+        JobStats jobStats = storageProvider.getJobStats();
+        PageRequest pageRequest = PageRequest.descOnUpdatedAt(jobStats.getScheduled().intValue());
+        List<Job> jobs = storageProvider.getScheduledJobs(instantProvider.now().minusSeconds(-60*minutesAfterClose),
+                pageRequest);
+        List<Incident> result = new ArrayList<>();
+        if (jobs == null) {
+            log.info("There is no stored jos.");
+            return result;
+        }
+
+        for (Job job : jobs) {
+            JobDetails jobDetails = job.getJobDetails();
+            Class[] parameterTypes = jobDetails.getJobParameterTypes();
+            if (parameterTypes.length == 1 && parameterTypes[0] == IncidentKafka.class) {
+                IncidentKafka storedIncidentKafka = (IncidentKafka) jobDetails.getJobParameterValues()[0];
+                Incident storedIncident = objectMapper.readValue(storedIncidentKafka.getPayload()
+                        , new TypeReference<>() {});
+                result.add(storedIncident);
+            }
+        }
+        return result;
+    }
+
 }

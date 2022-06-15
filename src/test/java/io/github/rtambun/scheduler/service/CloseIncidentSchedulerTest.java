@@ -23,10 +23,7 @@ import org.jobrunr.storage.StorageProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.NullSource;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.*;
 import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
@@ -507,6 +504,119 @@ class CloseIncidentSchedulerTest {
                         new JobDetails("CloseIncidentKafka", null, "sendRemoveCloseIncidentMessage",
                                 new ArrayList<>(List.of(new JobParameter(incidentKafkaStored))))
                 ))));
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @EmptySource
+    void getAllScheduledIncident_getScheduledJobs_ReturnNullOrEmpty_MethodReturnEmptyList(List<Job> jobs) throws JsonProcessingException {
+        Instant now = InstantGenerator.generateInstantUTC(2022,
+                6,
+                15,
+                14,
+                46,
+                0);
+        when(mockInstantProvider.now()).thenReturn(now);
+        when(mockStorageProvider.getScheduledJobs(any(), any())).thenReturn(jobs);
+        when(mockStorageProvider.getJobStats()).thenReturn(new JobStats(now,
+                0L,
+                0L,
+                0L,
+                0L,
+                0L,
+                0L,
+                0L,
+                0L,
+                0,
+                0));
+
+        List<Incident> actual = closeIncidentScheduler.getAllScheduledIncident();
+        List<Incident> expected = new ArrayList<>();
+        
+        verify(mockInstantProvider, times(1)).now();
+        ArgumentCaptor<Instant> instantArgumentCaptor = ArgumentCaptor.forClass(Instant.class);
+        ArgumentCaptor<PageRequest> pageRequestArgumentCaptor = ArgumentCaptor.forClass(PageRequest.class);
+        verify(mockStorageProvider, times(1)).getScheduledJobs(instantArgumentCaptor.capture(),
+                pageRequestArgumentCaptor.capture());
+
+        Instant expectedInstant = InstantGenerator.generateInstantUTC(2022,
+                6,
+                15,
+                14,
+                51,
+                0);
+        assertThat(instantArgumentCaptor.getValue()).isEqualTo(expectedInstant);
+        assertThat(pageRequestArgumentCaptor.getValue()).usingRecursiveComparison().isEqualTo(PageRequest.descOnUpdatedAt(0));
+
+        assertThat(actual).usingRecursiveComparison().isEqualTo(expected);
+    }
+
+    @Test
+    void getAllScheduledIncident_getScheduledJobs_ReturnOneJob_MethodReturnOneIncident() throws JsonProcessingException {
+        Instant now = InstantGenerator.generateInstantUTC(2022,
+                6,
+                15,
+                14,
+                46,
+                0);
+        when(mockInstantProvider.now()).thenReturn(now);
+
+        String payloadJsonStored = IncidentData.IncidentData1.replace("\"closeDate\":\"27/04/2022 11:48:54\"",
+                "\"closeDate\":\"28/04/2022 14:43:00\"");
+        IncidentKafka incidentKafkaStored = new IncidentKafka(payloadJsonStored,
+                "Incident",
+                "IncidentStatusUpdated");
+        UUID expectedUuid = UUID.randomUUID();
+        List<Job> storedJob = List.of(new Job(expectedUuid,
+                new JobDetails("CloseIncidentKafka", null, "sendRemoveCloseIncidentMessage",
+                        new ArrayList<>(List.of(new JobParameter(incidentKafkaStored))))
+        ));
+        when(mockStorageProvider.getScheduledJobs(any(), any())).thenReturn(storedJob);
+
+        when(mockStorageProvider.getJobStats()).thenReturn(new JobStats(now,
+                0L,
+                0L,
+                0L,
+                0L,
+                0L,
+                0L,
+                0L,
+                0L,
+                0,
+                0));
+
+        List<Incident> actual = closeIncidentScheduler.getAllScheduledIncident();
+        List<Incident> expected = new ArrayList<>();
+        expected.add(new Incident("incident_label",
+                InstantGenerator.generateInstantUTC(2022,
+                        4,
+                        27,
+                        11,
+                        48,
+                        54),
+                InstantGenerator.generateInstantUTC(2022,
+                        4,
+                        28,
+                        14,
+                        43,
+                        0), Status.CLOSED));
+
+        verify(mockInstantProvider, times(1)).now();
+        ArgumentCaptor<Instant> instantArgumentCaptor = ArgumentCaptor.forClass(Instant.class);
+        ArgumentCaptor<PageRequest> pageRequestArgumentCaptor = ArgumentCaptor.forClass(PageRequest.class);
+        verify(mockStorageProvider, times(1)).getScheduledJobs(instantArgumentCaptor.capture(),
+                pageRequestArgumentCaptor.capture());
+
+        Instant expectedInstant = InstantGenerator.generateInstantUTC(2022,
+                6,
+                15,
+                14,
+                51,
+                0);
+        assertThat(instantArgumentCaptor.getValue()).isEqualTo(expectedInstant);
+        assertThat(pageRequestArgumentCaptor.getValue()).usingRecursiveComparison().isEqualTo(PageRequest.descOnUpdatedAt(0));
+
+        assertThat(actual).usingRecursiveComparison().isEqualTo(expected);
     }
 
 }
