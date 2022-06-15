@@ -20,20 +20,18 @@ import static org.mockito.Mockito.when;
 class CloseIncidentControllerTest {
 
     private CloseIncidentScheduler closeIncidentScheduler;
-    private InstantProvider instantProvider;
     private CloseIncidentController closeIncidentController;
 
     @BeforeEach
     public void setUp() {
         closeIncidentScheduler = mock(CloseIncidentScheduler.class);
-        instantProvider = mock(InstantProvider.class);
-        closeIncidentController = new CloseIncidentController(closeIncidentScheduler, instantProvider);
+        closeIncidentController = new CloseIncidentController(closeIncidentScheduler);
     }
 
     @Test
     public void getAllCloseIncident_ok() throws JsonProcessingException {
         List<Incident> result = new ArrayList<>();
-        when(closeIncidentScheduler.getAllScheduledIncident(any())).thenReturn(result);
+        when(closeIncidentScheduler.getAllScheduledIncident()).thenReturn(result);
 
         ResponseEntity<List<Incident>> actual = closeIncidentController.getAllCloseIncident();
         assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -43,7 +41,7 @@ class CloseIncidentControllerTest {
     @Test
     public void getAllCloseIncident_jsonProcessingException_ReturnHttpInternalServerError() throws JsonProcessingException {
         List<Incident> result = new ArrayList<>();
-        when(closeIncidentScheduler.getAllScheduledIncident(any())).thenThrow(new JsonProcessingException("any"){});
+        when(closeIncidentScheduler.getAllScheduledIncident()).thenThrow(new JsonProcessingException("any"){});
 
         ResponseEntity<List<Incident>> actual = closeIncidentController.getAllCloseIncident();
         assertThat(actual.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
